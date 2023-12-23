@@ -1,0 +1,9 @@
+service: () -> {
+    addMemo: (text, principal) -> (variant {Ok:record {id:principal; userId:principal; user:record {id:principal; name:text}; notes:text}; Err:variant {InvalidPayload:text; NotFound:text}});
+    addUser: (text) -> (variant {Ok:record {id:principal; name:text}; Err:variant {InvalidPayload:text; NotFound:text}});
+    deleteMemo: (principal) -> (variant {Ok:record {id:principal; userId:principal; user:record {id:principal; name:text}; notes:text}; Err:variant {InvalidPayload:text; NotFound:text}});
+    editMemoById: (principal, text) -> (variant {Ok:record {id:principal; userId:principal; user:record {id:principal; name:text}; notes:text}; Err:variant {InvalidPayload:text; NotFound:text}});
+    findMemo: () -> (vec record {id:principal; userId:principal; user:record {id:principal; name:text}; notes:text}) query;
+    findUser: () -> (vec record {id:principal; name:text}) query;
+    findUserById: (principal) -> (variant {Ok:record {id:principal; name:text}; Err:variant {InvalidPayload:text; NotFound:text}}) query;
+}
