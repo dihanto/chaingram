@@ -2,12 +2,11 @@
     "canisters": {
         "chaingram": {
             "type": "custom",
-            "main": "src/index.ts",
-            "candid": "src/index.did",
             "build": "npx azle chaingram",
-            "wasm": ".azle/chaingram/chaingram.wasm",
-            "gzip": true
+            "root": "src",
+            "ts": "src/index.ts",
+            "candid": "src/index.did",
+            "wasm": ".azle/chaingram/chaingram.wasm.gz"
         }
     }
 }
-

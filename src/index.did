@@ -1,9 +1,27 @@
-service: () -> {
-    addMemo: (text, principal) -> (variant {Ok:record {id:principal; userId:principal; user:record {id:principal; name:text}; notes:text}; Err:variant {InvalidPayload:text; NotFound:text}});
-    addUser: (text) -> (variant {Ok:record {id:principal; name:text}; Err:variant {InvalidPayload:text; NotFound:text}});
-    deleteMemo: (principal) -> (variant {Ok:record {id:principal; userId:principal; user:record {id:principal; name:text}; notes:text}; Err:variant {InvalidPayload:text; NotFound:text}});
-    editMemoById: (principal, text) -> (variant {Ok:record {id:principal; userId:principal; user:record {id:principal; name:text}; notes:text}; Err:variant {InvalidPayload:text; NotFound:text}});
-    findMemo: () -> (vec record {id:principal; userId:principal; user:record {id:principal; name:text}; notes:text}) query;
-    findUser: () -> (vec record {id:principal; name:text}) query;
-    findUserById: (principal) -> (variant {Ok:record {id:principal; name:text}; Err:variant {InvalidPayload:text; NotFound:text}}) query;
+type Memo = record {
+  id : text;
+  createAt : nat64;
+  userId : text;
+  user : User;
+  updatedAt : opt nat64;
+  notes : text;
+};
+type User = record {
+  id : text;
+  createAt : nat64;
+  name : text;
+  updatedAt : opt nat64;
+};
+type _AzleResult = variant { Ok : Memo; Err : text };
+type _AzleResult_1 = variant { Ok : User; Err : text };
+type _AzleResult_2 = variant { Ok : vec Memo; Err : text };
+type _AzleResult_3 = variant { Ok : vec User; Err : text };
+service : () -> {
+  addMemo : (text, text) -> (_AzleResult);
+  addUser : (text) -> (_AzleResult_1);
+  deleteMemo : (text) -> (_AzleResult);
+  editMemoById : (text, text) -> (_AzleResult);
+  getMemos : () -> (_AzleResult_2) query;
+  getUserById : (text) -> (_AzleResult_1) query;
+  getUsers : () -> (_AzleResult_3) query;
 }
