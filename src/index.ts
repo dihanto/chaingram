@@ -1,9 +1,12 @@
 import {
   Canister,
+  Err,
+  Ok,
   Principal,
   Record,
   Result,
   StableBTreeMap,
+  Variant,
   Vec,
   query,
   text,
@@ -22,15 +25,21 @@ const Memo = Record({
   user: User, // Reference to the user
 });
 
-type UserResult = Result<User, text>;
-type MemoResult = Result<Memo, text>;
+const Error = Variant({
+  NotFound: text,
+  InvalidPayload: text,
+});
+
+type Error = typeof Error.tsType;
+type User = typeof User.tsType;
+type Memo = typeof Memo.tsType;
 
 let users = StableBTreeMap<Principal, User>(0);
 let memos = StableBTreeMap<Principal, Memo>(1);
 
 export default Canister({
-  addUser: update([text], UserResult, (name) => {
-    const id = Principal.fromRandom();
+  addUser: update([text], Result(User, Error), (name) => {
+    const id = generateId();
 
     const user: User = {
       id,
@@ -38,54 +47,82 @@ export default Canister({
     };
 
     users.insert(user.id, user);
-    return Result.Ok(user);
+    return Ok(user);
   }),
 
-  getUserById: query([Principal], UserResult, (id) => {
+  findUserById: query([Principal], Result(User, Error), (id) => {
     const userResult = users.get(id);
-    return userResult.map_err(() => "User not found");
+    if ("None" in userResult) {
+      return Err({
+        NotFound: "Users not found",
+      });
+    }
+
+    return Ok(userResult.Some);
   }),
 
-  getUsers: query([], Vec(User), () => users.values()),
+  findUser: query([], Vec(User), () => {
+    return users.values();
+  }),
 
-  getMemos: query([], Vec(Memo), () => memos.values()),
+  findMemo: query([], Vec(Memo), () => {
+    return memos.values();
+  }),
 
-  addMemo: update([text, Principal], MemoResult, (notes, userId) => {
-    const id = Principal.fromRandom();
+  addMemo: update([text, Principal], Result(Memo, Error), (notes, userId) => {
+    const id = generateId();
     const userResult = users.get(userId);
+    if ("None" in userResult) {
+      return Err({
+        NotFound: `User with id ${userId.toString()} not found`,
+      });
+    }
+    const memo: Memo = {
+      id,
+      notes,
+      userId,
+      user: userResult.Some,
+    };
 
-    return userResult.match(
-      () => Result.Err("User not found"),
-      (user) => {
-        const memo: Memo = {
-          id,
-          notes,
-          userId,
-          user,
-        };
-
-        memos.insert(memo.id, memo);
-        return Result.Ok(memo);
-      }
-    );
+    memos.insert(memo.id, memo);
+    return Ok(memo);
   }),
 
-  editMemoById: update([Principal, text], MemoResult, (id, notes) => {
+  editMemoById: update([Principal, text], Result(Memo, Error), (id, notes) => {
     const memoResult = memos.get(id);
-    return memoResult.match(
-      () => Result.Err("Memo not found"),
-      (memo) => {
-        memo.notes = notes;
-        return Result.Ok(memo);
-      }
-    );
+    if ("None" in memoResult) {
+      return Err({
+        NotFound: `Memo with that id doesn't exist`,
+      });
+    }
+
+    const memo = memoResult.Some;
+
+    memo.notes = notes;
+
+    return Ok(memo);
   }),
 
-  deleteMemo: update([Principal], MemoResult, (id) => {
-    const memoResult = memos.remove(id);
-    return memoResult.match(
-      () => Result.Err("Memo not found"),
-      (memo) => Result.Ok(memo)
-    );
+  deleteMemo: update([Principal], Result(Memo, Error), (id) => {
+    const memoResult = memos.get(id);
+
+    if ("None" in memoResult) {
+      return Err({
+        NotFound: `Photo with that id doesn't exist`,
+      });
+    }
+
+    const memo = memoResult.Some;
+    memos.remove(id);
+
+    return Ok(memo);
   }),
 });
+
+function generateId(): Principal {
+  const randoBytes = new Array(29)
+    .fill(0)
+    .map((_) => Math.floor(Math.random() * 256));
+
+  return Principal.fromUint8Array(Uint8Array.from(randoBytes));
+}
